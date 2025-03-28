@@ -1,6 +1,7 @@
-FROM quay.io/tembo/timeseries-pg:v0.1.7 AS base
+FROM postgres:16 AS base
+# FROM quay.io/tembo/timeseries-pg:v0.1.7 AS base
 
-USER root
+# USER root
 
 ENV PG_CONFIG=/usr/lib/postgresql/16/bin/pg_config
 
@@ -19,6 +20,20 @@ ENV PATH="/root/.cargo/bin:$PATH"
 
 RUN cargo install --locked cargo-pgrx --version 0.13.0
 RUN cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
+
+
+#
+# timescaledb
+#
+
+FROM base AS build-timescaledb
+
+RUN git clone --branch 2.19.0 --depth 1 https://github.com/timescale/timescaledb \
+    && cd timescaledb \
+    && ./bootstrap \
+    && cd build \
+    && make \
+    && make install
 
 
 #
@@ -65,14 +80,25 @@ RUN git clone --branch v0.15.11 --depth 1 https://github.com/paradedb/paradedb \
 
 
 #
+# pgmq
+#
+
+FROM base AS build-pgmq
+
+RUN git clone --branch v1.5.1 --depth 1 https://github.com/tembo-io/pgmq \
+    && cd pgmq/pgmq-extension \
+    && make \
+    && make install
+
+
+#
 # Main
 #
 
 FROM postgres:16
 
-# pg_timeseries
-COPY --from=base /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=base /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-timescaledb /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
+COPY --from=build-timescaledb /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
 
 COPY --from=build-age /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-age /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
@@ -85,5 +111,8 @@ COPY --from=build-pgvector /usr/share/postgresql/16/extension/* /usr/share/postg
 
 COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-paradedb /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+
+COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
+COPY --from=build-pgmq /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
 
 CMD ["postgres"]
