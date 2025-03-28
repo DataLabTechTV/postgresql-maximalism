@@ -59,5 +59,5 @@ This will interactively ask you for the password.
 All extensions should be created and ready to use. You can list available extensions as follows:
 
 ```sql
-SELECT * FROM pg_extension;
+SELECT extname FROM pg_extension;
 ```
