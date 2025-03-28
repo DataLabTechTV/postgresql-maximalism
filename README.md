@@ -11,8 +11,8 @@ A docker image will be built based on PostgreSQL 16, containing the following se
 | [timescaledb](https://github.com/timescale/timescaledb) | Time Series Store and Real-Time | Adds performance improvements, like partitioning or incremental views, to handle large scale time series data efficiently and in real-time. |
 | [pgvector](https://github.com/pgvector/pgvector) | Vector Store | Adds two approximate indexing approaches along with functions to efficiently compute vector similarities. |
 | [pg_search](https://github.com/paradedb/paradedb) | Full-Text Search | Extends full-text search capabilities with Lucene-like features, based on [Tantivy](https://github.com/quickwit-oss/tantivy), like segmented indexing, BM25 scoring, tokenizers, or stemming. |
-| [age](https://github.com/apache/age) | Graph Store | Apache AGE adds the ability to manage multiple graphs and run SQL as well as [openCypher](https://opencypher.org/) queries over them. |
-| [pgmq](https://github.com/tembo-io/pgmq) | Message Queuing | |
+| [pgrouting](https://github.com/pgRouting/pgrouting) | Graph Analytics | While no specialized graph storage is provided (i.e., no index-free adjacency), this adds several useful graph algorithms, like shortest-distance (e.g., Dijkstra, A*, Floyd-Warshall), centralities (betweenness), or minimum spanning tree (Kruskal, Prim). |
+| [pgmq](https://github.com/tembo-io/pgmq) | Message Queuing | Supports multiple queues, with read/write operations. Similar to [AWS SQS](https://aws.amazon.com/sqs/) or [RSMQ](https://github.com/smrchy/rsmq). |
 
 ## Requirements
 
