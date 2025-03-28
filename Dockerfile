@@ -86,13 +86,36 @@ RUN git clone --branch v0.15.11 --depth 1 https://github.com/paradedb/paradedb \
 
 
 #
-# Apache AGE
+# postgis
 #
 
-FROM base AS build-age
+FROM base AS build-postgis
 
-RUN git clone --branch PG16/v1.5.0-rc0 --depth 1 https://github.com/apache/age \
-    && cd age \
+RUN apt-get -y install docbook-xsl-ns gettext libgdal-dev libgeos-dev libjson-c-dev \
+    libproj-dev libprotobuf-c-dev libsfcgal-dev libxml2-dev libxml2-utils \
+    protobuf-c-compiler xsltproc
+
+RUN git clone --branch 3.5.2 --depth 1 https://git.osgeo.org/gitea/postgis/postgis \
+    && cd postgis \
+    && ./autogen.sh \
+    && ./configure \
+    && make \
+    && make install
+
+
+#
+# pgrouting
+#
+
+FROM base AS build-pgrouting
+
+RUN apt-get install -y libboost1.81-dev
+
+RUN git clone --branch v3.7.3 --depth 1 https://github.com/pgRouting/pgrouting \
+    && cd pgrouting \
+    && mkdir build \
+    && cd build \
+    && cmake .. \
     && make \
     && make install
 
@@ -130,10 +153,16 @@ COPY --from=build-pgvector /usr/share/postgresql/16/extension/* /usr/share/postg
 COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-paradedb /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
 
-COPY --from=build-age /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-age /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-postgis /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
+COPY --from=build-postgis /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+
+COPY --from=build-pgrouting /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
+COPY --from=build-pgrouting /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
 
 COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-pgmq /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+
+RUN apt-get update && apt-get install -y libproj25 libgeos-c1v5 libxml2 gettext \
+    libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1
 
 CMD ["postgres"]
