@@ -3,9 +3,6 @@
  * Task: Extract, Load, Transform
  */
 
--- Due to incompatibility
-DROP EXTENSION IF EXISTS timescaledb;
-
 CREATE TABLE IF NOT EXISTS youtube (
     videostatsid BIGINT,
     ytvideoid TEXT,

@@ -1,6 +1,6 @@
 /*
  * Extension: pg_mooncake
- * Task: EDA using DuckDB
+ * Task: Exploratory Data Analysis
  */
 
 SELECT AVG(likes) AS avg_likes
