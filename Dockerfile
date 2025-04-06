@@ -133,6 +133,19 @@ RUN git clone --branch v1.5.1 --depth 1 https://github.com/tembo-io/pgmq \
 
 
 #
+# pgai
+#
+
+FROM base AS build-pgai
+
+RUN apt-get update && apt-get install -y python3-pip postgresql-plpython3-16
+
+RUN git clone --branch pgai-v0.9.2 --depth 1 https://github.com/timescale/pgai \
+    && cd pgai \
+    && projects/extension/build.py build-install
+
+
+#
 # Main
 #
 
@@ -162,7 +175,10 @@ COPY --from=build-pgrouting /usr/share/postgresql/16/extension/* /usr/share/post
 COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-pgmq /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
 
+COPY --from=build-pgai /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
+COPY --from=build-pgai /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+
 RUN apt-get update && apt-get install -y libproj25 libgeos-c1v5 libxml2 gettext \
-    libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1
+    libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1 postgresql-plpython3-16
 
 CMD ["postgres"]
