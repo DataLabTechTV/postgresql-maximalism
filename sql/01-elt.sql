@@ -3,7 +3,8 @@
  * Task: Extract, Load, Transform
  */
 
-LOAD 'pg_mooncake';
+-- Due to incompatibility
+DROP EXTENSION IF EXISTS timescaledb;
 
 CREATE TABLE IF NOT EXISTS youtube (
     videostatsid BIGINT,
