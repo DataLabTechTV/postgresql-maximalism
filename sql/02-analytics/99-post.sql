@@ -1,4 +1,5 @@
 /*
+ * Category: Analytics
  * Extension: pg_mooncake
  * Task: Post-Tasks
  */
