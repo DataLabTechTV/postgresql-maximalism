@@ -1,6 +1,6 @@
 /*
  * Category: Search
- * Built-In: GIN, tsvector, tsquery, ts_rank
+ * Built-in: GIN, tsvector, tsquery, ts_rank
  * Task: Create inverted index and query.
  */
 
