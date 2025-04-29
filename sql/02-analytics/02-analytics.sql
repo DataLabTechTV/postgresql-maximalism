@@ -4,5 +4,6 @@
  * Task: Exploratory Data Analysis
  */
 
-SELECT AVG(likes) AS avg_likes
-FROM youtube;
+SELECT COUNT(*) FROM youtube;
+
+SELECT AVG(likes) AS avg_likes FROM youtube;

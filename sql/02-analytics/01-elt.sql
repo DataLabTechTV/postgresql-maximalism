@@ -4,7 +4,9 @@
  * Task: Extract, Load, Transform
  */
 
-CREATE TABLE IF NOT EXISTS youtube (
+DROP TABLE IF EXISTS youtube;
+
+CREATE TABLE youtube (
     videostatsid BIGINT,
     ytvideoid TEXT,
     views BIGINT,
