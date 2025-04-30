@@ -4,30 +4,61 @@
  * Task: Extract, Load, Transform
  */
 
-DROP TABLE IF EXISTS youtube;
 
-CREATE TABLE youtube (
-    videostatsid BIGINT,
-    ytvideoid TEXT,
-    views BIGINT,
-    comments BIGINT,
-    likes BIGINT,
-    dislikes BIGINT,
-    "timestamp" TIMESTAMP WITHOUT TIME ZONE
+-- SETUP MINIO SECRET
+
+SELECT mooncake.drop_secret('minio');
+
+SELECT mooncake.create_secret(
+    'minio',
+    'S3',
+    'datalabtech',
+    'datalabtech',
+    '{
+        "ENDPOINT":"minio:9000",
+        "REGION":"us-east-1",
+        "USE_SSL": false,
+        "URL_STYLE": "path"
+    }'
+);
+
+SET mooncake.default_bucket = 's3://lakehouse';
+
+-- LOAD DATA INTO A MOONCAKE COLUMNSTORE
+
+DROP SCHEMA IF EXISTS lakehouse CASCADE;
+
+CREATE SCHEMA lakehouse;
+
+CREATE TABLE lakehouse.youtube (
+    videostatsid bigint,
+    ytvideoid text,
+    views bigint,
+    comments bigint,
+    likes bigint,
+    dislikes bigint,
+    "timestamp" timestamp without time zone
 ) USING columnstore;
 
-
-INSERT INTO youtube
+INSERT INTO lakehouse.youtube
 SELECT *
 FROM mooncake.read_csv(
     'hf://datasets/jettisonthenet/timeseries_trending_youtube_videos_2019-04-15_to_2020-04-15/videostats.csv'
 )
 AS (
-    videostatsid BIGINT,
-    ytvideoid TEXT,
-    views BIGINT,
-    comments BIGINT,
-    likes BIGINT,
-    dislikes BIGINT,
-    "timestamp" TIMESTAMP WITHOUT TIME ZONE
+    videostatsid bigint,
+    ytvideoid text,
+    views bigint,
+    comments bigint,
+    likes bigint,
+    dislikes bigint,
+    "timestamp" timestamp without time zone
 );
+
+
+-- REPLICATE THE DATA IN A REGULAR TABLE
+
+DROP TABLE IF EXISTS youtube;
+
+CREATE TABLE youtube AS
+SELECT * FROM lakehouse.youtube;
