@@ -6,7 +6,7 @@
 DROP TABLE IF EXISTS request;
 
 CREATE TABLE request (
-    id int PRIMARY KEY,
+    id integer PRIMARY KEY,
     submit_time timestamp without time zone DEFAULT now(),
     params jsonb,
     response jsonb

@@ -6,10 +6,10 @@
 DROP TABLE IF EXISTS doc;
 
 CREATE TABLE doc (
-    id INT,
-    content TEXT,
-    rating INT,
-    publish_date DATE
+    id integer,
+    content text,
+    rating integer,
+    publish_date date
 );
 
 INSERT INTO doc (id, content, rating, publish_date)

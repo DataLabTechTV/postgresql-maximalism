@@ -13,7 +13,7 @@ DROP SCHEMA IF EXISTS json_schema CASCADE;
 CREATE SCHEMA json_schema;
 
 CREATE TABLE json_schema.request (
-    id int,
+    id integer,
     colname text,
     schema jsonb
 );
@@ -91,7 +91,7 @@ VALUES
 
 -- VALIDATE JSON SCHEMA SYNTAX
 
-SELECT colname, jsonschema_is_valid(schema::JSON)
+SELECT colname, jsonschema_is_valid(schema::json)
 FROM json_schema.request;
 
 
