@@ -41,8 +41,14 @@ RUN git clone --depth 1 https://github.com/supabase/pg_jsonschema \
 
 FROM base AS build-pg_mooncake
 
-RUN git clone --branch v0.1.2 --depth 1 https://github.com/Mooncake-Labs/pg_mooncake \
+RUN git clone https://github.com/Mooncake-Labs/pg_mooncake \
     && cd pg_mooncake \
+    && git config user.email "204358040+DataLabTechTV@users.noreply.github.com" \
+    && git config user.name "Data Lab Tech" \
+    && git remote add fork https://github.com/raghunandanbhat/pg_mooncake \
+    && git fetch fork \
+    && git checkout v0.1.2 \
+    && git merge --no-edit --strategy ours fork/ceph-storage \
     && git submodule update --init --recursive \
     && make release -j$(nproc) \
     && make install
