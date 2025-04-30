@@ -3,20 +3,20 @@ services:
     build: .
     container_name: postgresql-maximalism
     environment:
-      - POSTGRES_USER=${POSTGRES_USER}
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
-      - POSTGRES_DB=${POSTGRES_DB}
+      - POSTGRES_USER=${PGUSER}
+      - POSTGRES_PASSWORD=${PGPASSWORD}
+      - POSTGRES_DB=${PGDATABASE}
     command: >
       postgres
-        -c shared_preload_libraries="timescaledb, pg_search"
-        -c cron.database_name="${POSTGRES_DB}"
+        -c shared_preload_libraries="timescaledb,pg_search"
+        -c cron.database_name="${PGDATABASE}"
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
       - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
     healthcheck:
-      test: ["CMD", "pg_isready", "-U", "${POSTGRES_USER}"]
+      test: ["CMD", "pg_isready", "-U", "${PGUSER}"]
       interval: 10s
       retries: 5
     restart: unless-stopped
@@ -35,28 +35,32 @@ services:
       - "9000:9000"
       - "9001:9001"
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
     volumes:
       - minio:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 10s
+      retries: 5
     command: server /data --console-address ":9001"
 
   minio-mc:
     image: minio/mc:RELEASE.2025-04-16T18-13-26Z
     container_name: minio-mc
     depends_on:
-      - minio
+      minio:
+        condition: service_healthy
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME}
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_BUCKET_NAME=${MINIO_BUCKET_NAME}
     entrypoint: >
       /bin/sh -c "
       /usr/bin/mc alias set minio http://minio:9000 $MINIO_ROOT_USER $MINIO_ROOT_PASSWORD;
       /usr/bin/mc mb --ignore-existing minio/${MINIO_BUCKET_NAME};
       "
     restart: no
-
 
 volumes:
   pg_data:

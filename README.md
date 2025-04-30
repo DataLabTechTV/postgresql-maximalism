@@ -23,9 +23,17 @@ A docker image will be built based on PostgreSQL 16, containing the following se
 After cloning the repository, copy the `.env.example` to `.env` and replace the values with your own username, password, and database name:
 
 ```bash
-POSTGRES_USER=<username>
-POSTGRES_PASSWORD=<password>
-POSTGRES_DB=<database>
+PGUSER=<username>
+PGPASSWORD=<password>
+PGDATABASE=<database>
+```
+
+And do the same for the MinIO variables:
+
+```bash
+MINIO_ROOT_USER=<username>
+MINIO_ROOT_PASSWORD=<password>
+MINIO_BUCKET_NAME=<bucket>
 ```
 
 You can then build the image and start a PostgreSQL 16 container named `postgresql-maximalism`:
