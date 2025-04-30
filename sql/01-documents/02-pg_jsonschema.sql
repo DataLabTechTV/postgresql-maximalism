@@ -5,6 +5,7 @@
  */
 
 
+
 -- CREATE JSON SCHEMA TABLE
 
 DROP SCHEMA IF EXISTS json_schema CASCADE;
@@ -87,10 +88,12 @@ VALUES
     );
 
 
+
 -- VALIDATE JSON SCHEMA SYNTAX
 
 SELECT colname, jsonschema_is_valid(schema::JSON)
 FROM json_schema.request;
+
 
 
 -- CREATE JSON VALIDATION TRIGGER
@@ -105,9 +108,18 @@ BEGIN
   FROM json_schema.request
   WHERE colname = 'params';
 
+  IF NOT jsonschema_is_valid(params_schema) THEN
+    RAISE invalid_schema_definition;
+  END IF;
+
   SELECT schema INTO response_schema
   FROM json_schema.request
   WHERE colname = 'response';
+
+  IF NOT jsonschema_is_valid(response_schema) THEN
+    RAISE invalid_schema_definition;
+  END IF;
+
 
   IF NOT jsonb_matches_schema(params_schema, NEW.params) THEN
     RAISE EXCEPTION
@@ -129,25 +141,61 @@ FOR EACH ROW
 EXECUTE FUNCTION validate_requests_json();
 
 
+
+-- TEST JSON SCHEMA VALIDATION
+
+-- Update the request's response schema with an invalid status enum
+UPDATE json_schema.request
+SET schema['properties']['status']['enum'] = '10'
+WHERE colname = 'response';
+
+-- Confirm that the change was applied
+SELECT schema->'properties'->'status'->'enum'
+FROM json_schema.request
+WHERE colname = 'response';
+
+-- Insert with valid response status
+INSERT INTO request (id, params, response)
+VALUES
+    (11, '{"user_id": 2, "action": "reset_password"}', '{"status": "success", "message": "E-mail sent with link to reset password "}'),
+    (12, '{"user_id": 3, "action": "view_dashboard"}', '{"status": "success", "message": "Dashboard loaded successfully"}');
+
+-- Update the request's response schema with the original status enum
+UPDATE json_schema.request
+SET schema['properties']['status']['enum'] = '["success", "error"]'
+WHERE colname = 'response';
+
+-- Confirm that the change was applied
+SELECT schema->'properties'->'status'->'enum'
+FROM json_schema.request
+WHERE colname = 'response';
+
+-- Insert with valid response status again
+INSERT INTO request (id, params, response)
+VALUES
+    (11, '{"user_id": 2, "action": "reset_password"}', '{"status": "success", "message": "E-mail sent with link to reset password "}'),
+    (12, '{"user_id": 3, "action": "view_dashboard"}', '{"status": "success", "message": "Dashboard loaded successfully"}');
+
+
 -- TEST JSON VALIDATION
 
 -- Insert with invalid action param and response status
 INSERT INTO request (id, params, response)
 VALUES
-    (11, '{"user_id": 1, "action": "delete_account"}', '{"status": "success", "message": "Login successful"}'),
-    (12, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "warning", "message": "Dashboard loaded successfully"}');
+    (13, '{"user_id": 1, "action": "delete_account"}', '{"status": "success", "message": "Login successful"}'),
+    (14, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "warning", "message": "Dashboard loaded successfully"}');
 
 -- Insert with invalid response status only
 INSERT INTO request (id, params, response)
 VALUES
-    (11, '{"user_id": 1, "action": "reset_password"}', '{"status": "success", "message": "Login successful"}'),
-    (12, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "warning", "message": "Dashboard loaded successfully"}');
+    (13, '{"user_id": 1, "action": "reset_password"}', '{"status": "success", "message": "Login successful"}'),
+    (14, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "warning", "message": "Dashboard loaded successfully"}');
 
 -- Insert with fully valid params and response
 INSERT INTO request (id, params, response)
 VALUES
-    (11, '{"user_id": 1, "action": "reset_password"}', '{"status": "success", "message": "E-mail sent with link to reset password "}'),
-    (12, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "success", "message": "Dashboard loaded successfully"}');
+    (13, '{"user_id": 1, "action": "reset_password"}', '{"status": "success", "message": "E-mail sent with link to reset password "}'),
+    (14, '{"user_id": 1, "action": "view_dashboard"}', '{"status": "success", "message": "Dashboard loaded successfully"}');
 
 -- Update with invalid action param
 UPDATE request
