@@ -1,9 +1,13 @@
 #!/bin/sh
 
 if ! which pgbench >/dev/null; then
-    echo "pgbench: missing"
+    echo "pgbench: not found"
     exit 1
 fi
+
+#
+# Load DB config
+#
 
 script_dir=$(dirname "$(realpath "$0")")
 
@@ -15,11 +19,27 @@ export PGUSER
 export PGPASSWORD
 export PGDATABASE
 
+#
 # Initialize pgbench
-pgbench -i
+#
 
+pgbench_check=$(
+    psql -t -c "SELECT to_regclass('public.pgbench_accounts')" |
+        tr -d '[:space:]'
+)
+
+if [ "$pgbench_check" != "pgbench_accounts" ]; then
+    echo "==> pgbench tables not found, initializing"
+    pgbench -i
+    echo
+fi
+
+#
 # Run tests
-for sql_script in *.sql; do
-    printf "\n==> Testing %s\n" "$sql_script"
+#
+
+for sql_script in "$script_dir"/*.sql; do
+    echo "==> Testing $(basename "$sql_script")"
     pgbench -f "$sql_script" -T 30
+    echo
 done
