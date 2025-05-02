@@ -150,6 +150,8 @@ RUN git clone --branch pgai-v0.9.2 --depth 1 https://github.com/timescale/pgai \
     && cd pgai \
     && projects/extension/build.py build-install
 
+RUN pip3 install --prefix=/extra-python-packages scipy powerlaw
+
 
 #
 # Main
@@ -183,8 +185,10 @@ COPY --from=build-pgmq /usr/share/postgresql/16/extension/* /usr/share/postgresq
 
 COPY --from=build-pgai /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
 COPY --from=build-pgai /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pgai /usr/local/lib/pgai /usr/local/lib/pgai
+COPY --from=build-pgai /extra-python-packages /usr
 
 RUN apt-get update && apt-get install -y libproj25 libgeos-c1v5 libxml2 gettext \
-    libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1 postgresql-plpython3-16
+    libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1 postgresql-plpython3-16 python3
 
 CMD ["postgres"]
