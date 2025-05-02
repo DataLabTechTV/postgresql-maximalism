@@ -38,8 +38,15 @@ fi
 # Run tests
 #
 
+echo "==> Running pre stage script"
+psql -f "$script_dir/../00-pre.sql"
+echo
+
 for sql_script in "$script_dir"/*.sql; do
     echo "==> Testing $(basename "$sql_script")"
     pgbench -f "$sql_script" -T 30
     echo
 done
+
+echo "==> Running post stage script"
+psql -f "$script_dir/../99-post.sql"
