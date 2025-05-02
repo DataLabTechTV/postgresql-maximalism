@@ -6,13 +6,14 @@ A docker image will be built based on PostgreSQL 16, containing the following se
 
 | Name | Category | Description |
 |------|----------|-------------|
-| [pg_jsonschema](https://github.com/supabase/pg_jsonschema) | Document Store | Ensures a JSON schema is respected for JSON or JSONB. |
-| [pg_mooncake](https://github.com/Mooncake-Labs/pg_mooncake) | Column Store and Analytics | Adds support for Iceberg and Delta Lake, along with DuckDB based analytics. |
-| [timescaledb](https://github.com/timescale/timescaledb) | Time Series Store and Real-Time | Adds performance improvements, like partitioning or incremental views, to handle large scale time series data efficiently and in real-time. |
-| [pgvector](https://github.com/pgvector/pgvector) | Vector Store | Adds two approximate indexing approaches along with functions to efficiently compute vector similarities. |
-| [pg_search](https://github.com/paradedb/paradedb) | Full-Text Search | Extends full-text search capabilities with Lucene-like features, based on [Tantivy](https://github.com/quickwit-oss/tantivy), like segmented indexing, BM25 scoring, tokenizers, or stemming. |
-| [pgrouting](https://github.com/pgRouting/pgrouting) | Graph Analytics | While no specialized graph storage is provided (i.e., no index-free adjacency), this adds several useful graph algorithms, like shortest-distance (e.g., Dijkstra, A*, Floyd-Warshall), centralities (betweenness), or minimum spanning tree (Kruskal, Prim). |
-| [pgmq](https://github.com/tembo-io/pgmq) | Message Queuing | Supports multiple queues, with read/write operations. Similar to [AWS SQS](https://aws.amazon.com/sqs/) or [RSMQ](https://github.com/smrchy/rsmq). |
+| [pg_jsonschema](https://github.com/supabase/pg_jsonschema) | Documents | Ensures a JSON schema is respected for JSON or JSONB. |
+| [pg_mooncake](https://github.com/Mooncake-Labs/pg_mooncake) | Analytics & Time Series | Support for Iceberg and Delta Lake, along with DuckDB based analytics. |
+| [timescaledb](https://github.com/timescale/timescaledb) | Analytics & Time Series | Adds performance improvements, like partitioning or incremental views, to handle large scale time series data efficiently and in real-time. |
+| [pgvector](https://github.com/pgvector/pgvector) | Vectors & AI | Two approximate indexing approaches, along with functions to efficiently compute vector similarities. |
+| [pgai](https://docs.timescale.com/ai/latest/) | Vectors & AI / Search | Hugging Face dataset loading, text chunking and embedding, LLM support and RAG, similarity search. |
+| [pg_search](https://github.com/paradedb/paradedb) | Search | Extends full-text search capabilities with Lucene-like features, based on [Tantivy](https://github.com/quickwit-oss/tantivy), like segmented indexing, BM25 scoring, tokenizers, or stemming. |
+| [pgrouting](https://github.com/pgRouting/pgrouting) | Graphs | While no specialized graph storage is provided (i.e., no index-free adjacency), this adds several useful graph algorithms, like shortest-distance (e.g., Dijkstra, A*, Floyd-Warshall), centralities (betweenness), or minimum spanning tree (Kruskal, Prim). |
+| [pgmq](https://github.com/tembo-io/pgmq) | Message Queues | Supports multiple queues, with read/write operations. Similar to [AWS SQS](https://aws.amazon.com/sqs/) or [RSMQ](https://github.com/smrchy/rsmq). |
 
 ## Requirements
 
@@ -44,7 +45,7 @@ docker compose up --build -d
 
 ## Connecting
 
-You can then connect to the database using whatever client you prefer. For example, on Debian 12, you can install the `psql` client as follows:
+You can then connect to the database using whichever client you prefer. For example, on Debian 12, you can install the `psql` client as follows:
 
 ```bash
 sudo curl -o /usr/share/keyrings/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
@@ -54,18 +55,31 @@ sudo sh -c 'echo "deb [signed-by=/usr/share/keyrings/apt.postgresql.org.asc] htt
 sudo apt install -y postgresql-client-16
 ```
 
-And you establish a link to PostgreSQL by running the following command and using the same values as the ones configured in the `.env`:
+And you establish a link to PostgreSQL by loading the `.env` and running the following command:
 
 ```bash
-psql -h localhost -u <username>
+eval export $(cat .env)
+psql
 ```
 
-This will interactively ask you for the password.
+This will load the configured PostgreSQL environment variables, which are used by default by most PostgreSQL utilities.
 
 ## Extensions
 
-All extensions should be created and ready to use. You can list available extensions as follows:
+All extensions should be created and ready to use. You can list available extensions by typing `\dx` or by using the following equivalent query:
 
 ```sql
-SELECT extname FROM pg_extension;
+SELECT
+    e.extname AS "Name",
+    e.extversion as "Version",
+    n.nspname AS "Schema",
+    d.description AS "Description"
+FROM
+    pg_extension e
+    LEFT JOIN pg_namespace n
+    ON e.extnamespace = n.oid
+    LEFT JOIN pg_description d
+    ON e.oid = d.objoid
+ORDER BY
+    e.extname;
 ```
