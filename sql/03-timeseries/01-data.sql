@@ -23,6 +23,7 @@ SELECT * FROM youtube;
 WITH recent_months AS (
     SELECT DISTINCT date_trunc('month', "timestamp")::date AS month_start
     FROM youtube_ts
+    ORDER BY month_start DESC
     LIMIT 6
 ),
 yt_sample AS (
