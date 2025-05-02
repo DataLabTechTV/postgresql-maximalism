@@ -83,63 +83,46 @@ RETURNS double precision[] AS $$
 $$ LANGUAGE plpython3u;
 
 
-DROP FUNCTION IF EXISTS boxcox_transform;
-
-CREATE OR REPLACE FUNCTION boxcox_transform(
-    x double precision,
-    lambda double precision
-)
-RETURNS double precision AS $$
-BEGIN
-    IF lambda = 0 THEN
-        RETURN log(x);
-    ELSE
-        RETURN (power(x, lambda) - 1) / lambda;
-    END IF;
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
-
-
-DROP FUNCTION IF EXISTS boxbox_estimate_lambda;
-
-CREATE OR REPLACE FUNCTION boxbox_estimate_lambda(data double precision[])
-RETURNS double precision AS $$
-DECLARE
-    mean_x double precision;
-    mean_x_squared double precision;
-BEGIN
-    -- Calculate the sample mean of the data
-    mean_x := (SELECT avg(val) FROM unnest(data) AS val);
-
-    -- Calculate the sample mean of the squares of the data
-    mean_x_squared := (SELECT avg(val^2) FROM unnest(data) AS val);
-
-    -- Calculate lambda using the method of moments formula
-    RETURN (3 * mean_x_squared - mean_x) / (2 * (mean_x_squared - mean_x^2));
-END;
-$$ LANGUAGE plpgsql IMMUTABLE;
-
-
 
 -- ADD NORMALLY DISTRIBUTED VIEWS TRANSFORMATION
 
 ALTER TABLE youtube_ts
 ADD COLUMN norm_views double precision;
 
--- FIXME: "tuple decompression limit exceeded by operation
-WITH weekly_lambda AS (
+SET timescaledb.max_tuples_decompressed_per_dml_transaction TO 0;
+
+WITH weekly_views AS (
     SELECT
         date_trunc('week', "timestamp") AS week_start,
-        boxbox_estimate_lambda(
-            array_agg(views::double precision)
-        ) AS lambda
+        array_agg(
+            views::double precision
+            ORDER BY videostatsid
+        ) AS week_views,
+        array_agg(
+            videostatsid
+            ORDER BY videostatsid
+        ) AS week_videostatsid
     FROM youtube_ts
     GROUP BY week_start
+),
+norm_weekly_views AS (
+    SELECT
+        week_start,
+        v.val AS videostatsid,
+        n.val AS norm_views
+    FROM weekly_views w
+    JOIN LATERAL UNNEST(w.week_videostatsid)
+        WITH ORDINALITY AS v(val, ord)
+    ON TRUE
+    JOIN LATERAL UNNEST(to_normal_distribution(w.week_views))
+        WITH ORDINALITY AS n(val, ord)
+    ON v.ord = n.ord
 )
 UPDATE youtube_ts y
-SET norm_views = boxcox_transform(y.views, w.lambda)
-FROM weekly_lambda w
-WHERE date_trunc('week', y."timestamp") = w.week_start;
+SET norm_views = w.norm_views
+FROM norm_weekly_views w
+WHERE y.videostatsid = w.videostatsid;
+
 
 SELECT *
 FROM youtube_ts
