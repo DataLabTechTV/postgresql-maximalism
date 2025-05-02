@@ -1,6 +1,6 @@
 WITH youtube_stats AS (
     SELECT
-        "timestamp",
+        date_trunc('month', "timestamp") AS month_start,
         views,
         likes,
         dislikes,
@@ -9,7 +9,7 @@ WITH youtube_stats AS (
     FROM lakehouse.youtube
 )
 SELECT
-    date_trunc('month', "timestamp") AS "month",
+    month_start,
     'all' AS subset,
 
     count(*) AS n,
@@ -19,12 +19,12 @@ SELECT
     round(percentile_cont(0.5) WITHIN GROUP (ORDER BY views)) AS median_views,
     round(percentile_cont(0.9) WITHIN GROUP (ORDER BY views)) AS p90_views
 FROM youtube_stats
-GROUP BY "month"
+GROUP BY month_start
 
 UNION
 
 SELECT
-    date_trunc('month', "timestamp") AS "month",
+    month_start,
     'lower_likes_share' AS subset,
 
     count(*) FILTER (WHERE likes < dislikes) AS n,
@@ -38,12 +38,12 @@ SELECT
     round(percentile_cont(0.9) WITHIN GROUP (ORDER BY views)
         FILTER (WHERE likes < dislikes)) AS p90_views
 FROM youtube_stats
-GROUP BY "month"
+GROUP BY month_start
 
 UNION
 
 SELECT
-    date_trunc('month', "timestamp") AS "month",
+    month_start,
     'higher_likes_share' AS subset,
 
     count(*) FILTER (WHERE likes > dislikes) AS n,
@@ -57,6 +57,6 @@ SELECT
     round(percentile_cont(0.9) WITHIN GROUP (ORDER BY views)
         FILTER (WHERE likes > dislikes)) AS p90_views
 FROM youtube_stats
-GROUP BY "month"
+GROUP BY month_start
 
-ORDER BY "month", subset;
+ORDER BY month_start, subset;

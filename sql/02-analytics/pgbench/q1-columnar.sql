@@ -1,6 +1,6 @@
 SELECT
-    date_trunc('week', "timestamp")::date AS week,
+    date_trunc('week', "timestamp")::date AS week_start,
     round(avg(likes)) AS avg_likes,
     round(avg(dislikes)) AS avg_dislikes
 FROM lakehouse.youtube
-GROUP BY week;
+GROUP BY week_start;
