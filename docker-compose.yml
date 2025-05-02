@@ -43,6 +43,7 @@ services:
       test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
       interval: 10s
       retries: 5
+    restart: unless-stopped
     command: server /data --console-address ":9001"
 
   minio-mc:
