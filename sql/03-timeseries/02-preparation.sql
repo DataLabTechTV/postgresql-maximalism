@@ -1,7 +1,7 @@
 /*
  * Category: Time Series
  * Extension: timescaledb
- * Task: Anomaly detection using z-score.
+ * Task: Data preparation for anomaly detection.
  */
 
 
@@ -146,7 +146,7 @@ SET norm_views = w.norm_views
 FROM norm_weekly_views w
 WHERE y.videostatsid = w.videostatsid;
 
-
+-- Normality test (norm_views)
 SELECT
     date_trunc('week', "timestamp") AS week_start,
     test_normality(array_agg(norm_views), sample_size => 1000) AS is_normal
