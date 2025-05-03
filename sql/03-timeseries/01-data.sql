@@ -13,6 +13,10 @@ DROP TABLE IF EXISTS youtube_ts;
 CREATE TABLE youtube_ts AS
 SELECT * FROM youtube;
 
+ALTER TABLE youtube_ts
+DROP CONSTRAINT IF EXISTS youtube_ts_pkey,
+ADD PRIMARY KEY ("timestamp", videostatsid);
+
 
 
 -- DETERMINE TEMPORAL CHUNK SIZE
@@ -95,6 +99,7 @@ ALTER TABLE youtube_ts
     -- Switch to bigints to integers to save memory (range allows it)
     ALTER COLUMN videostatsid TYPE integer,
     ALTER COLUMN views TYPE integer,
+    ALTER COLUMN comments TYPE integer,
     ALTER COLUMN likes TYPE integer,
     ALTER COLUMN dislikes TYPE integer,
 
@@ -121,22 +126,3 @@ SELECT create_hypertable(
     by_range('timestamp', INTERVAL '1 month'),
     migrate_data => TRUE
 );
-
-
-
--- ENABLE COMPRESSION
-
--- Setting timescaledb.compress_segmentby is usually recommended as well,
--- but we don't have a column we can segment by, as records are independent
--- here.
-ALTER TABLE youtube_ts
-SET (timescaledb.compress);
-
--- This will trigger compression when the latest timestamp in a chunk
--- is older than 1 month.
-SELECT add_compression_policy('youtube_ts', INTERVAL '1 month');
-
-
-
--- INSPECT DATA
-SELECT * FROM youtube_ts LIMIT 100;
