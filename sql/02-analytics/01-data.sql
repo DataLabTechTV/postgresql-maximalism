@@ -64,3 +64,7 @@ DROP TABLE IF EXISTS youtube;
 
 CREATE TABLE youtube AS
 SELECT * FROM lakehouse.youtube;
+
+-- Primary is not supported on 'columnstore', but, for relational, it is.
+ALTER TABLE youtube
+ADD PRIMARY KEY (videostatsid);
