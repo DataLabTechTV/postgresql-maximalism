@@ -6,17 +6,40 @@
 
 
 
+-- UTILITY FUNCTIONS
+
+DROP FUNCTION IF EXISTS remove_outliers;
+
+CREATE OR REPLACE FUNCTION remove_outliers(data double precision[])
+RETURNS double precision[] AS $$
+    import numpy as np
+    from scipy.stats.mstats import winsorize
+    transformed_data = winsorize(np.array(data), limits=[0.01, 0.01])
+    return transformed_data.tolist()
+$$ LANGUAGE plpython3u;
+
+
+
+
 -- DISTRIBUTION TEST FUNCTIONS
 
 DROP FUNCTION IF EXISTS test_normality;
 
 CREATE OR REPLACE FUNCTION test_normality(
     data double precision[],
-    p_threshold double precision DEFAULT 0.05
+    p_threshold double precision DEFAULT 0.05,
+    sample_size integer DEFAULT NULL
 )
 RETURNS boolean AS $$
-    import scipy.stats
-    stat, p = scipy.stats.shapiro(data)
+    import numpy as np
+    from scipy.stats import normaltest as normality_test
+
+    if sample_size is None:
+        _, p = normality_test(data)
+    else:
+        sample_data = np.random.choice(data, sample_size)
+        _, p = normality_test(sample_data)
+
     return p > p_threshold
 $$ LANGUAGE plpython3u;
 
@@ -50,14 +73,14 @@ $$ LANGUAGE plpython3u;
 -- Normality test
 SELECT
     date_trunc('week', "timestamp") AS week_start,
-    test_normality(array_agg(views)) AS is_normal
+    test_normality(array_agg(views), sample_size => 1000) AS is_normal
 FROM youtube_ts
 GROUP BY week_start;
 
 -- Log-normality test
 SELECT
     date_trunc('week', "timestamp") AS week_start,
-    test_normality(array_agg(log(views))) AS is_log_normal
+    test_normality(array_agg(log(views)), sample_size => 1000) AS is_log_normal
 FROM youtube_ts
 GROUP BY week_start;
 
@@ -74,12 +97,25 @@ GROUP BY week_start;
 
 DROP FUNCTION IF EXISTS to_normal_distribution;
 
-CREATE OR REPLACE FUNCTION to_normal_distribution(data double precision[])
+CREATE OR REPLACE FUNCTION to_normal_distribution(
+    data double precision[],
+    method integer DEFAULT 0
+)
 RETURNS double precision[] AS $$
-    import scipy.stats
     import numpy as np
-    normalized_data, _ = scipy.stats.boxcox(data)
-    return np.array(normalized_data).tolist()
+
+    if method == 0:
+        from scipy.stats import boxcox
+        normalized_data, _ = boxcox(data)
+
+    elif method == 1:
+        from sklearn.preprocessing import PowerTransformer
+        pt = PowerTransformer(method="yeo-johnson")
+        normalized_data = (
+            pt.fit_transform(np.array(data).reshape(-1, 1)).flatten()
+        )
+
+    return normalized_data.tolist()
 $$ LANGUAGE plpython3u;
 
 
@@ -89,6 +125,8 @@ $$ LANGUAGE plpython3u;
 ALTER TABLE youtube_ts
 ADD COLUMN norm_views double precision;
 
+-- If it's the first run, also execute the SET by itself.
+ALTER DATABASE datalabtech
 SET timescaledb.max_tuples_decompressed_per_dml_transaction TO 0;
 
 WITH weekly_views AS (
@@ -99,7 +137,7 @@ WITH weekly_views AS (
             ORDER BY videostatsid
         ) AS week_views,
         array_agg(
-            videostatsid
+            videostatsid::integer
             ORDER BY videostatsid
         ) AS week_videostatsid
     FROM youtube_ts
@@ -114,7 +152,7 @@ norm_weekly_views AS (
     JOIN LATERAL UNNEST(w.week_videostatsid)
         WITH ORDINALITY AS v(val, ord)
     ON TRUE
-    JOIN LATERAL UNNEST(to_normal_distribution(w.week_views))
+    JOIN LATERAL UNNEST(to_normal_distribution(w.week_views, method => 1))
         WITH ORDINALITY AS n(val, ord)
     ON v.ord = n.ord
 )
@@ -124,6 +162,8 @@ FROM norm_weekly_views w
 WHERE y.videostatsid = w.videostatsid;
 
 
-SELECT *
+SELECT
+    date_trunc('week', "timestamp") AS week_start,
+    test_normality(array_agg(norm_views), sample_size => 1000) AS is_normal
 FROM youtube_ts
-LIMIT 100;
+GROUP BY week_start;
