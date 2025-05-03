@@ -6,21 +6,6 @@
 
 
 
--- UTILITY FUNCTIONS
-
-DROP FUNCTION IF EXISTS remove_outliers;
-
-CREATE OR REPLACE FUNCTION remove_outliers(data double precision[])
-RETURNS double precision[] AS $$
-    import numpy as np
-    from scipy.stats.mstats import winsorize
-    transformed_data = winsorize(np.array(data), limits=[0.01, 0.01])
-    return transformed_data.tolist()
-$$ LANGUAGE plpython3u;
-
-
-
-
 -- DISTRIBUTION TEST FUNCTIONS
 
 DROP FUNCTION IF EXISTS test_normality;
