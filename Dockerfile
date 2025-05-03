@@ -150,7 +150,7 @@ RUN git clone --branch pgai-v0.9.2 --depth 1 https://github.com/timescale/pgai \
     && cd pgai \
     && projects/extension/build.py build-install
 
-RUN pip3 install --prefix=/extra-python-packages scipy powerlaw
+RUN pip3 install --prefix=/extra-python-packages scipy powerlaw scikit-learn
 
 
 #
@@ -159,32 +159,50 @@ RUN pip3 install --prefix=/extra-python-packages scipy powerlaw
 
 FROM postgres:16
 
-COPY --from=build-pg_jsonschema /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pg_jsonschema /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pg_jsonschema /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pg_jsonschema /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-pg_mooncake /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pg_mooncake /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pg_mooncake /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pg_mooncake /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-timescaledb /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-timescaledb /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-timescaledb /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-timescaledb /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-pgvector /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pgvector /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pgvector /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgvector /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-paradedb /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-paradedb /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-postgis /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-postgis /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-postgis /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-postgis /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-pgrouting /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pgrouting /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pgrouting /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgrouting /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pgmq /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgmq /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 
-COPY --from=build-pgai /usr/lib/postgresql/16/lib/* /usr/lib/postgresql/16/lib/
-COPY --from=build-pgai /usr/share/postgresql/16/extension/* /usr/share/postgresql/16/extension/
+COPY --from=build-pgai /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgai /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
 COPY --from=build-pgai /usr/local/lib/pgai /usr/local/lib/pgai
 COPY --from=build-pgai /extra-python-packages /usr
 
