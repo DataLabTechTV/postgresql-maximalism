@@ -22,6 +22,8 @@ SELECT mooncake.create_secret(
     }'
 );
 
+-- If it's the first run, also execute the SET by itself.
+ALTER DATABASE datalabtech
 SET mooncake.default_bucket = 's3://lakehouse';
 
 -- LOAD DATA INTO A MOONCAKE COLUMNSTORE
