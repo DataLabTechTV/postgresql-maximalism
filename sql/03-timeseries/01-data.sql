@@ -91,14 +91,19 @@ ORDER BY ord;
 
 -- ADJUST TABLE TYPES FOR PERFORMANCE
 
--- Switch to fixed size text types
 ALTER TABLE youtube_ts
-ALTER COLUMN ytvideoid TYPE char(11);
+    -- Switch to bigints to integers to save memory (range allows it)
+    ALTER COLUMN videostatsid TYPE integer,
+    ALTER COLUMN views TYPE integer,
+    ALTER COLUMN likes TYPE integer,
+    ALTER COLUMN dislikes TYPE integer,
 
--- Switch to timestamp with time zone set to UTC
-ALTER TABLE youtube_ts
-ALTER COLUMN "timestamp" TYPE timestamp with time zone
-    USING "timestamp" AT TIME ZONE 'UTC';
+    -- Switch to fixed size text types
+    ALTER COLUMN ytvideoid TYPE char(11),
+
+    -- Switch to timestamp with time zone set to UTC
+    ALTER COLUMN "timestamp" TYPE timestamp with time zone
+        USING "timestamp" AT TIME ZONE 'UTC';
 
 
 
