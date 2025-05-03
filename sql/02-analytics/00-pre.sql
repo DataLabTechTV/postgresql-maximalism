@@ -7,7 +7,8 @@
 
 -- DISABLE INCOMPATIBLE EXTENSIONS
 
-DROP EXTENSION IF EXISTS timescaledb;
+-- This also deletes any data that depends on the extension.
+DROP EXTENSION IF EXISTS timescaledb CASCADE;
 
 
 -- PATCH MOONCAKE TO SUPPORT URL_STYLE
