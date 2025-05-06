@@ -5,12 +5,12 @@ description = "PostgreSQL Maximalism companion notebooks"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "connectorx>=0.4.3",
-    "deltalake>=0.25.5",
     "duckdb>=1.2.2",
     "jupyter>=1.1.1",
-    "polars>=1.29.0",
+    "matplotlib>=3.10.1",
+    "nbdime>=4.0.2",
+    "pandas>=2.2.3",
+    "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.1.0",
-    "s3fs>=2025.3.2",
-    "s3path>=0.6.1",
+    "sqlalchemy>=2.0.40",
 ]
