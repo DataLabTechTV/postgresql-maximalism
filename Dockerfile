@@ -14,9 +14,17 @@ RUN curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y \
     && rustup update stable
 
 ENV PATH="/root/.cargo/bin:$PATH"
-ENV PGRX_VERSION=0.13.0
 
-RUN cargo install --locked cargo-pgrx --version ${PGRX_VERSION}
+
+FROM base AS builder_pgrx_0_12_9
+
+RUN cargo install --locked cargo-pgrx --version 0.12.9
+RUN cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
+
+
+FROM base AS builder_pgrx_0_13_0
+
+RUN cargo install --locked cargo-pgrx --version 0.13.0
 RUN cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
 
 
@@ -24,15 +32,13 @@ RUN cargo pgrx init --pg16=/usr/lib/postgresql/16/bin/pg_config
 # pg_jsonschema
 #
 
-FROM base AS build-pg_jsonschema
+FROM builder_pgrx_0_12_9 AS build-pg_jsonschema
 
 RUN git clone --depth 1 https://github.com/supabase/pg_jsonschema \
     && cd pg_jsonschema \
     && git fetch origin 14e6d7b53a2ef43048be67db79335e19a9345ade \
     && git checkout 14e6d7b53a2ef43048be67db79335e19a9345ade \
-    && sed -i 's/\(pgrx.*\) = "0.12.9"/\1 = "'$PGRX_VERSION'"/' Cargo.toml \
-    && cargo update \
-    && cargo pgrx install
+    && cargo pgrx install --release
 
 
 #
@@ -68,6 +74,15 @@ RUN git clone --branch 2.19.0 --depth 1 https://github.com/timescale/timescaledb
     && make install
 
 
+FROM builder_pgrx_0_12_9 AS build-timescaledb-toolkit
+
+RUN git clone --branch 1.21.0 --depth 1 \
+        https://github.com/timescale/timescaledb-toolkit \
+    && cd timescaledb-toolkit/extension \
+    && cargo pgrx install --release \
+    && cargo run --manifest-path ../tools/post-install/Cargo.toml -- pg_config
+
+
 #
 # pgvector
 #
@@ -84,7 +99,7 @@ RUN git clone --branch v0.8.0 --depth 1 https://github.com/pgvector/pgvector \
 # ParadeDB (pg_search)
 #
 
-FROM base AS build-paradedb
+FROM builder_pgrx_0_13_0 AS build-paradedb
 
 RUN git clone --branch v0.15.11 --depth 1 https://github.com/paradedb/paradedb \
     && cd paradedb/pg_search \
@@ -172,6 +187,10 @@ COPY --from=build-pg_mooncake /usr/share/postgresql/16/extension/* \
 COPY --from=build-timescaledb /usr/lib/postgresql/16/lib/* \
     /usr/lib/postgresql/16/lib/
 COPY --from=build-timescaledb /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
+COPY --from=build-timescaledb-toolkit /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-timescaledb-toolkit /usr/share/postgresql/16/extension/* \
     /usr/share/postgresql/16/extension/
 
 COPY --from=build-pgvector /usr/lib/postgresql/16/lib/* \
