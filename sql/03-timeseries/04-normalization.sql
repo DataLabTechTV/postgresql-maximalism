@@ -60,21 +60,24 @@ SELECT
     date_trunc('week', "timestamp") AS week_start,
     test_normality(array_agg(views), sample_size => 1000) AS is_normal
 FROM youtube_ts
-GROUP BY week_start;
+GROUP BY week_start
+ORDER BY week_start;
 
 -- Log-normality test
 SELECT
     date_trunc('week', "timestamp") AS week_start,
     test_normality(array_agg(log(views)), sample_size => 1000) AS is_log_normal
 FROM youtube_ts
-GROUP BY week_start;
+GROUP BY week_start
+ORDER BY week_start;
 
 -- Power law test
 SELECT
     date_trunc('week', "timestamp") AS week_start,
     test_powerlaw(array_agg(views), sample_size => 1000) AS is_powerlaw
 FROM youtube_ts
-GROUP BY week_start;
+GROUP BY week_start
+ORDER BY week_start;
 
 
 
@@ -151,4 +154,5 @@ SELECT
     date_trunc('week', "timestamp") AS week_start,
     test_normality(array_agg(norm_views), sample_size => 1000) AS is_normal
 FROM youtube_ts
-GROUP BY week_start;
+GROUP BY week_start
+ORDER BY week_start;
