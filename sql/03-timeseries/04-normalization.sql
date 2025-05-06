@@ -1,7 +1,7 @@
 /*
  * Category: Time Series
  * Extension: timescaledb
- * Task: Data preparation for anomaly detection.
+ * Task: Data normalization (views).
  */
 
 
