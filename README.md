@@ -37,9 +37,15 @@ MINIO_ROOT_PASSWORD=<password>
 MINIO_BUCKET_NAME=<bucket>
 ```
 
-You can then build the image and start a PostgreSQL 16 container named `postgresql-maximalism`:
+We create a builder with `max-parallelism=1`, as most builds are already individually parallelized. Building without this option might result in a freeze due to system overload, but feel free to increase the value, or skip this step altogether. You can build the image and start the containers for WhoDB, MinIO and PostgreSQL 16 by running the following commands:
 
 ```bash
+docker buildx create \
+    --name psql-max-builder \
+    --driver docker-container \
+    --platform linux/amd64 \
+    --config buildkitd.toml \
+    --use
 docker compose up --build -d
 ```
 
