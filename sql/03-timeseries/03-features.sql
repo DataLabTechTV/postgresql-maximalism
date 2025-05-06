@@ -132,7 +132,7 @@ SELECT add_retention_policy('weekly_totals', INTERVAL '1 year');
 -- HYPERFUNCTIONS
 -- https://docs.timescale.com/api/latest/hyperfunctions/
 
--- Downsample
+-- Downsample/smoothing of no. comments
 -- See visualization notebook for plots
 
 DROP FUNCTION IF EXISTS weekly_smoothed_comments;
@@ -199,3 +199,18 @@ END;
 $$ LANGUAGE 'plpgsql';
 
 SELECT * FROM weekly_smoothed_comments();
+
+
+-- Histogram of likes
+-- Returns counts for setup intervals
+
+SELECT
+    unnest(
+        histogram(
+            likes,
+            1000,       -- (-Inf; 1000)
+            5000000,    -- [5,000,000, +Inf)
+            50000       -- 50k bin width, e.g. [4,950,000; 5,000,000)
+        )
+    ) AS bin_count
+FROM youtube_ts;
