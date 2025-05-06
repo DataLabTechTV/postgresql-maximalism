@@ -133,37 +133,69 @@ SELECT add_retention_policy('weekly_totals', INTERVAL '1 year');
 -- https://docs.timescale.com/api/latest/hyperfunctions/
 
 -- Downsample
--- TODO
+-- See visualization notebook for plots
 
-WITH yt_sample AS (
+DROP FUNCTION IF EXISTS weekly_smoothed_comments;
+
+CREATE OR REPLACE FUNCTION weekly_smoothed_comments()
+RETURNS TABLE (
+    week_start date,
+    orig_comments bigint,
+    lttb_comments bigint,
+    asap_comments bigint
+) AS $$
+BEGIN
+    RETURN QUERY
+    WITH yt_original AS (
+        SELECT
+            time_bucket('1 week', "timestamp") AS bucket,
+            sum(comments)::integer AS comments
+        FROM youtube_ts y
+        GROUP BY bucket
+    ),
+    yt_lttb AS (
+        SELECT
+            time_bucket('1 week', "time") AS bucket,
+            sum("value")::integer AS comments
+        FROM unnest((
+            SELECT lttb(
+                "timestamp",
+                comments,
+                -- 10% sample size
+                (SELECT (count(*) * 0.10)::integer FROM youtube_ts)
+            )
+            FROM youtube_ts
+        ))
+        GROUP BY bucket
+    ),
+    yt_asap AS (
+        SELECT
+            time_bucket('1 week', "time") AS bucket,
+            sum("value")::integer AS comments
+        FROM unnest((
+            SELECT asap_smooth(
+                "timestamp",
+                comments,
+                -- 10% sample size
+                (SELECT (count(*) * 0.10)::integer FROM youtube_ts)
+            )
+            FROM youtube_ts
+        ))
+        GROUP BY bucket
+    )
     SELECT
-        time_bucket('1 hour', "time") AS bucket,
-        sum("value"::integer) AS comments
-    FROM unnest((
-        SELECT lttb(
-            "timestamp",
-            comments,
-            -- 10% sample size
-            (SELECT (count(*) * 0.10)::integer FROM youtube_ts)
-        )
-        FROM youtube_ts
-    ))
-    GROUP BY bucket
-),
-yt_original AS (
-    SELECT
-        time_bucket('1 hour', "timestamp") AS bucket,
-        sum(comments) AS comments
-    FROM youtube_ts
-    GROUP BY bucket
-)
-SELECT
-    date_trunc('week', bucket) AS week_start,
-    sum(o.comments) AS o_comments,
-    sum(s.comments) AS s_comments
-FROM yt_sample s
-JOIN yt_original o
-USING (bucket)
-GROUP BY week_start
-ORDER BY week_start
-LIMIT 100;
+        date_trunc('week', bucket)::date AS week_start,
+        sum(o.comments) AS orig_comments,
+        sum(l.comments) AS lttb_comments,
+        sum(a.comments) AS asap_comments
+    FROM yt_original o
+    LEFT JOIN yt_lttb l
+    USING (bucket)
+    LEFT JOIN yt_asap a
+    USING (bucket)
+    GROUP BY week_start
+    ORDER BY week_start;
+END;
+$$ LANGUAGE 'plpgsql';
+
+SELECT * FROM weekly_smoothed_comments();
