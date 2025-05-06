@@ -11,11 +11,11 @@
 -- Setting timescaledb.compress_segmentby is usually recommended as well,
 -- but we don't have a column we can segment by, as records are independent
 -- here.
-ALTER TABLE youtube_ts
-SET (timescaledb.compress);
+ALTER TABLE youtube_ts SET (timescaledb.compress);
 
 -- This will trigger compression when the latest timestamp in a chunk
 -- is older than 1 month.
+SELECT remove_compression_policy('youtube_ts', if_exists => TRUE);
 SELECT add_compression_policy('youtube_ts', INTERVAL '1 month');
 
 
