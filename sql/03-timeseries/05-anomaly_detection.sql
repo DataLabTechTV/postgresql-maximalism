@@ -6,6 +6,17 @@
 
 
 
+-- PICK A WEEK FOR TESTING THAT MIGHT BE ANOMALOUS
+-- week_start := '2019-12-02'
+SELECT
+    date_trunc('week', "timestamp")::date AS week_start,
+    round(avg(dislikes)) AS avg_dislikes
+FROM lakehouse.youtube
+GROUP BY week_start
+ORDER BY week_start;
+
+
+
 -- Inspiration: https://medium.com/booking-com-development/anomaly-detection-in-time-series-using-statistical-analysis-cc587b21d008
 --
 -- Steps for a single day of the current week being tested:
@@ -25,18 +36,18 @@ DROP MATERIALIZED VIEW IF EXISTS youtube_ts_stats;
 
 CREATE MATERIALIZED VIEW youtube_ts_stats(
     bucket,
-    avg_views,
-    std_views,
-    avg_norm_views,
-    std_norm_views
+    avg_dislikes,
+    std_dislikes,
+    avg_norm_dislikes,
+    std_norm_dislikes
 )
 WITH (timescaledb.continuous) AS
 SELECT
     time_bucket('1 week', "timestamp") AS bucket,
-    average(stats_agg(views)),
-    stddev(stats_agg(views)),
-    average(stats_agg(norm_views)),
-    stddev(stats_agg(norm_views))
+    average(stats_agg(dislikes)),
+    stddev(stats_agg(dislikes)),
+    average(stats_agg(norm_dislikes)),
+    stddev(stats_agg(norm_dislikes))
 FROM youtube_ts
 GROUP BY bucket;
 
@@ -51,39 +62,37 @@ DROP TABLE IF EXISTS week_selection;
 CREATE TABLE week_selection (
     videostatsid integer,
     "timestamp" timestamp with time zone,
-    norm_views double precision,
+    norm_dislikes double precision,
     ref_week_start date,
     abs_z_score double precision
 );
 
--- week_start := '2020-01-06'
-
 WITH ref_weeks AS (
     SELECT
         bucket::date AS ref_week_start,
-        avg_norm_views,
-        std_norm_views
+        avg_norm_dislikes,
+        std_norm_dislikes
     FROM youtube_ts_stats
     WHERE bucket
-        BETWEEN '2020-01-06'::date - INTERVAL '8 weeks'
-        AND '2020-01-06'::date - INTERVAL '1 week'
+        BETWEEN '2019-12-02'::date - INTERVAL '8 weeks'
+        AND '2019-12-02'::date - INTERVAL '1 week'
 )
 INSERT INTO week_selection (
     videostatsid,
     "timestamp",
-    norm_views,
+    norm_dislikes,
     ref_week_start,
     abs_z_score
 )
 SELECT
     y.videostatsid,
     y."timestamp",
-    y.norm_views,
+    y.norm_dislikes,
     r.ref_week_start,
-    abs((y.norm_views - r.avg_norm_views) / r.std_norm_views) AS abs_z_score
+    abs((y.norm_dislikes - r.avg_norm_dislikes) / r.std_norm_dislikes) AS abs_z_score
 FROM youtube_ts y
 CROSS JOIN ref_weeks AS r
-WHERE date_trunc('week', "timestamp") = '2020-01-06';
+WHERE date_trunc('week', "timestamp") = '2019-12-02';
 
 
 SELECT *
@@ -108,7 +117,8 @@ WITH median_z_scores AS (
 norm_z_scores AS (
     SELECT
         videostatsid,
-        abs(abs_z_score - median_abs_z_score) AS norm_abs_z_score
+        ref_week_start,
+        abs(abs_z_score - median_abs_z_score) AS norm_z_score
     FROM week_selection
     JOIN median_z_scores
     USING (videostatsid)
@@ -116,7 +126,8 @@ norm_z_scores AS (
 DELETE FROM week_selection w
 USING norm_z_scores n
 WHERE w.videostatsid = n.videostatsid
-    AND n.norm_abs_z_score >= 0.6;
+    AND w.ref_week_start = n.ref_week_start
+    AND n.norm_z_score >= 0.6;
 
 SELECT count(*) FROM week_selection;
 
@@ -124,15 +135,18 @@ SELECT count(*) FROM week_selection;
 
 -- STEP 3: STATS FOR SELECTED WEEKS, ABSOLUTE Z-SCORE, SIGNAL ANOMALY
 
+DROP TABLE IF EXISTS youtube_anomalies;
+
+CREATE TABLE youtube_anomalies AS
 WITH week_stats AS (
     SELECT
         videostatsid,
-        average(stats_agg(y.norm_views)) AS avg_norm_views,
-        stddev(stats_agg(y.norm_views)) AS std_norm_views
+        average(stats_agg(y.norm_dislikes)) AS avg_norm_dislikes,
+        stddev(stats_agg(y.norm_dislikes)) AS std_norm_dislikes
     FROM youtube_ts y
     JOIN week_selection w
     USING (videostatsid)
-    WHERE date_trunc('week', y."timestamp") = '2020-01-06'
+    WHERE date_trunc('week', y."timestamp") = '2019-12-02'
     GROUP BY videostatsid
 ),
 z_scores AS (
@@ -140,18 +154,36 @@ z_scores AS (
         videostatsid,
         (
             CASE
-                WHEN std_norm_views = 0 THEN 0
-                ELSE abs(norm_views - avg_norm_views) / std_norm_views
+                WHEN std_norm_dislikes = 0 THEN 0
+                ELSE abs(norm_dislikes - avg_norm_dislikes) / std_norm_dislikes
             END
         ) AS abs_z_score
     FROM youtube_ts y
     JOIN week_stats s
     USING (videostatsid)
-    WHERE date_trunc('week', y."timestamp") = '2020-01-06'
+    WHERE date_trunc('week', y."timestamp") = '2019-12-02'
 )
 SELECT
     videostatsid,
     abs_z_score,
-    (abs_z_score > 2.5) AS is_anomaly
-FROM z_scores
-WHERE abs_z_score > 0;
+    (abs_z_score > 3) AS is_anomaly
+FROM z_scores;
+
+SELECT *
+FROM youtube_anomalies
+ORDER BY videostatsid;
+
+
+
+-- INSPECT YOUTUBE ANOMALIES WITH DISLIKE MAJORITY
+
+SELECT
+    videostatsid,
+    ytvideoid,
+    dislikes / (likes + dislikes) AS dislike_ratio,
+    abs_z_score
+FROM youtube_ts
+JOIN youtube_anomalies
+USING (videostatsid)
+WHERE is_anomaly
+    AND dislikes > likes;
