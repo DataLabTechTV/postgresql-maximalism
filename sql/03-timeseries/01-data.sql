@@ -15,6 +15,7 @@ SELECT * FROM youtube;
 
 ALTER TABLE youtube_ts
 DROP CONSTRAINT IF EXISTS youtube_ts_pkey,
+-- The "timestamp" column is required for partitioning
 ADD PRIMARY KEY ("timestamp", videostatsid);
 
 
