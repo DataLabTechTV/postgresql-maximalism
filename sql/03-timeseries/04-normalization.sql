@@ -57,25 +57,25 @@ $$ LANGUAGE plpython3u;
 
 -- Normality test
 SELECT
-    date_trunc('week', "timestamp") AS week_start,
+    bucket AS week_start,
     test_normality(array_agg(dislikes), sample_size => 1000) AS is_normal
-FROM youtube_ts
+FROM youtube_ts_weekly_stats
 GROUP BY week_start
 ORDER BY week_start;
 
 -- Log-normality test
 SELECT
-    date_trunc('week', "timestamp") AS week_start,
+    bucket AS week_start,
     test_normality(array_agg(log(dislikes)), sample_size => 1000) AS is_log_normal
-FROM youtube_ts
+FROM youtube_ts_weekly_stats
 GROUP BY week_start
 ORDER BY week_start;
 
 -- Power law test
 SELECT
-    date_trunc('week', "timestamp") AS week_start,
+    bucket AS week_start,
     test_powerlaw(array_agg(dislikes), sample_size => 1000) AS is_powerlaw
-FROM youtube_ts
+FROM youtube_ts_weekly_stats
 GROUP BY week_start
 ORDER BY week_start;
 
@@ -108,53 +108,67 @@ $$ LANGUAGE plpython3u;
 
 
 
--- ADD NORMALLY DISTRIBUTED DISLIKES TRANSFORMATION
-
-ALTER TABLE youtube_ts
-ADD COLUMN norm_dislikes double precision;
+-- NORMALLY DISTRIBUTED TRANSFORMATIONS
 
 -- If it's the first run, also execute the SET by itself.
 ALTER DATABASE datalabtech
 SET timescaledb.max_tuples_decompressed_per_dml_transaction TO 0;
 
+DROP MATERIALIZED VIEW IF EXISTS youtube_ts_weekly_features;
+
+SELECT * FROM youtube_ts_weekly_stats LIMIT 10;
+
+-- Non-CE materialized view due to use of CTEs
+CREATE MATERIALIZED VIEW youtube_ts_weekly_features(
+    bucket,
+    ytvideoid,
+    norm_dislikes
+) AS
 WITH weekly_dislikes AS (
     SELECT
-        date_trunc('week', "timestamp") AS week_start,
+        bucket::date AS week_start,
         array_agg(
             dislikes::double precision
-            ORDER BY videostatsid
+            ORDER BY bucket, ytvideoid
         ) AS week_dislikes,
         array_agg(
-            videostatsid::integer
-            ORDER BY videostatsid
-        ) AS week_videostatsid
-    FROM youtube_ts
-    GROUP BY week_start
+            ytvideoid
+            ORDER BY bucket, ytvideoid
+        ) AS week_ytvideoids
+    FROM youtube_ts_weekly_stats
+    GROUP BY bucket
 ),
 norm_weekly_dislikes AS (
     SELECT
         week_start,
-        v.val AS videostatsid,
-        n.val AS norm_dislikes
+        ytvideoid.val AS ytvideoid,
+        norm_dislikes.val AS norm_dislikes
     FROM weekly_dislikes w
-    JOIN LATERAL UNNEST(w.week_videostatsid)
-        WITH ORDINALITY AS v(val, ord)
+    JOIN LATERAL unnest(w.week_ytvideoids)
+        WITH ORDINALITY AS ytvideoid(val, ord)
     ON TRUE
-    JOIN LATERAL UNNEST(to_normal_distribution(w.week_dislikes, method => 1))
-        WITH ORDINALITY AS n(val, ord)
-    ON v.ord = n.ord
+    JOIN LATERAL unnest(
+            to_normal_distribution(
+                w.week_dislikes,
+                method => 1
+            )
+        )
+        WITH ORDINALITY AS norm_dislikes(val, ord)
+    ON ytvideoid.ord = norm_dislikes.ord
 )
-UPDATE youtube_ts y
-SET norm_dislikes = w.norm_dislikes
-FROM norm_weekly_dislikes w
-WHERE y.videostatsid = w.videostatsid;
+SELECT
+    week_start,
+    ytvideoid,
+    norm_dislikes
+FROM norm_weekly_dislikes;
 
+SELECT * FROM youtube_ts_weekly_features;
 
 -- Normality test (norm_dislikes)
 -- See visualization notebook for plots
 SELECT
-    date_trunc('week', "timestamp") AS week_start,
+    bucket AS week_start,
     test_normality(array_agg(norm_dislikes), sample_size => 1000) AS is_normal
-FROM youtube_ts
+FROM youtube_ts_weekly_features
 GROUP BY week_start
 ORDER BY week_start;
