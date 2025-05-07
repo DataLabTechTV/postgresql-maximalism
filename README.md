@@ -18,6 +18,10 @@ A docker image will be built based on PostgreSQL 16, containing the following se
 ## Requirements
 
 - Docker (>= 20.10.0, with `docker compose`)
+- NVIDIA Container Toolkit (see [install instructions](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html))
+
+> [!NOTE]
+> The NVIDIA Container Toolkit is optional, if you don't want to run the `pgai` demo queries. Otherwise, you can simply comment out the `ollama` and `pgai-worker` services from the `docker-compose.yml` and launch it that way. You can also run it using the CPU, if you comment out the `deploy` and `runtime` sections from `ollama`, but this will likely be slow.
 
 ## Setup
 
