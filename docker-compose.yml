@@ -63,6 +63,28 @@ services:
       "
     restart: no
 
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    ports:
+      - "11434:11434"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    runtime: nvidia
+
+  pgai-worker:
+    image: timescale/pgai-vectorizer-worker:v0.9.2
+    container_name: pgai-worker
+    depends_on:
+      - ollama
+    environment:
+      - PGAI_VECTORIZER_WORKER_DB_URL=postgres://${PGUSER}:${PGPASSWORD}@postgres:5432/${PGDATABASE}
+      - OLLAMA_HOST=http://ollama:11434
+    command: [ "--poll-interval", "5s" ]
+
 volumes:
   pg_data:
   minio:
