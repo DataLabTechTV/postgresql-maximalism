@@ -1,4 +1,13 @@
-WITH youtube_stats AS (
+WITH monthly_recency AS (
+    SELECT *, row_number() OVER (
+        PARTITION BY
+            ytvideoid,
+            date_trunc('month', "timestamp")
+        ORDER BY "timestamp" DESC
+    ) AS recency
+    FROM lakehouse.youtube
+),
+youtube_stats AS (
     SELECT
         date_trunc('month', "timestamp") AS month_start,
         views,
@@ -6,7 +15,8 @@ WITH youtube_stats AS (
         dislikes,
         likes / (likes + dislikes) AS likes_share,
         dislikes / (likes + dislikes) AS dislikes_share
-    FROM lakehouse.youtube
+    FROM monthly_recency
+    WHERE recency = 1
 )
 SELECT
     month_start,
