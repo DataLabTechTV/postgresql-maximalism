@@ -68,6 +68,8 @@ services:
     container_name: ollama
     ports:
       - "11434:11434"
+    volumes:
+      - ollama_models:/root/.ollama
     deploy:
       resources:
         reservations:
@@ -90,3 +92,4 @@ services:
 volumes:
   pg_data:
   minio:
+  ollama_models:
