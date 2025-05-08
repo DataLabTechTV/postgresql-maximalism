@@ -96,6 +96,17 @@ RUN git clone --branch v0.8.0 --depth 1 https://github.com/pgvector/pgvector \
 
 
 #
+# pgvectorscale
+#
+
+FROM builder_pgrx_0_12_9 AS build-pgvectorscale
+
+RUN git clone --branch 0.7.1 --depth 1 https://github.com/timescale/pgvectorscale \
+    && cd pgvectorscale/pgvectorscale \
+    && cargo pgrx install --release
+
+
+#
 # ParadeDB (pg_search)
 #
 
@@ -196,6 +207,11 @@ COPY --from=build-timescaledb-toolkit /usr/share/postgresql/16/extension/* \
 COPY --from=build-pgvector /usr/lib/postgresql/16/lib/* \
     /usr/lib/postgresql/16/lib/
 COPY --from=build-pgvector /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
+
+COPY --from=build-pgvectorscale /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgvectorscale /usr/share/postgresql/16/extension/* \
     /usr/share/postgresql/16/extension/
 
 COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* \
