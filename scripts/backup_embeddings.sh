@@ -5,11 +5,14 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-output_dir=$1
+output_dir=$(readlink -f "$1")
+latest_dir=${output_dir}/latest
 timestamp=$(date +%Y%m%d%H%M)
-filename=datalabtech-movie_embeddings_store-${timestamp}.dump
+base_filename=datalabtech-movie_embeddings_store
+filename=${base_filename}-${timestamp}.dump
+latest_filename=${base_filename}.dump
 
-echo "==> Running pg_dump"
+echo "==> Running pg_dump on container"
 docker exec postgresql-maximalism pg_dump -Fc \
     -U datalabtech \
     -h localhost \
@@ -22,3 +25,8 @@ docker cp "postgresql-maximalism:$filename" "${output_dir}/"
 
 echo "==> Deleting $filename from container"
 docker exec postgresql-maximalism rm "$filename"
+
+echo "==> Updating latest symlink for ${base_filename}"
+mkdir -p "$latest_dir" &&
+    ln -s -f "${output_dir}/${filename}" "${latest_dir}/${latest_filename}" ||
+    echo "!!! Could not create $latest_dir"
