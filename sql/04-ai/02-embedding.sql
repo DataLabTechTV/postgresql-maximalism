@@ -189,7 +189,6 @@ SET v_combined = v_features || v_content;
 -- Let's check the final result.
 SELECT * FROM movies LIMIT 100;
 
--- TODO: index final embedding, after combining vectors
+-- Index v_combined for cosine similarity search
 CREATE INDEX IF NOT EXISTS movie_embeddings_v_combined_cos_idx
-ON movies
-USING diskann (v_combined vector_cosine_ops);
+ON movies USING diskann (v_combined vector_cosine_ops);
