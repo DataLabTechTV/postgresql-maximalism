@@ -74,6 +74,7 @@ services:
           devices:
             - capabilities: [gpu]
     runtime: nvidia
+    restart: unless-stopped
 
   pgai-worker:
     image: timescale/pgai-vectorizer-worker:v0.9.2
@@ -84,6 +85,7 @@ services:
       - PGAI_VECTORIZER_WORKER_DB_URL=postgres://${PGUSER}:${PGPASSWORD}@postgres:5432/${PGDATABASE}
       - OLLAMA_HOST=http://ollama:11434
     command: [ "--poll-interval", "5s" ]
+    restart: unless-stopped
 
 volumes:
   pg_data:
