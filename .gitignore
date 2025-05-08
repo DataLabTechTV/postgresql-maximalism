@@ -1,3 +1,17 @@
+# Generic
+
 .env
+
 .vscode/
 .ipynb_checkpoints/
+
+
+# Project-specific
+
+dumps/**
+!dumps/latest/
+
+
+# Global exclusions
+
+!.gitkeep
