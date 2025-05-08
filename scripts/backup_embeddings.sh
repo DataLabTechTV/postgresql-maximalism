@@ -1,22 +1,32 @@
 #!/bin/sh
 
+set -e
+
 if [ $# -lt 1 ]; then
     echo "Usage: $0 OUTPUT_DIR"
     exit 1
 fi
 
+SCRIPT_DIR="$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)"
+
+# shellcheck source=/dev/null
+. "$SCRIPT_DIR/../.env"
+
+pg_user=${PGUSER:-postgres}
+pg_database=${PGDATABASE:-postgres}
+
 output_dir=$(readlink -f "$1")
 latest_dir=${output_dir}/latest
 timestamp=$(date +%Y%m%d%H%M)
-base_filename=datalabtech-movie_embeddings_store
+base_filename=$pg_database-movie_embeddings_store
 filename=${base_filename}-${timestamp}.dump
 latest_filename=${base_filename}.dump
 
 echo "==> Running pg_dump on container"
 docker exec postgresql-maximalism pg_dump -Fc \
-    -U datalabtech \
+    -U "$pg_user" \
     -h localhost \
-    -d datalabtech \
+    -d "$pg_database" \
     -t movie_embeddings_store \
     -f "$filename"
 
