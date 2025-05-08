@@ -12,54 +12,52 @@ SELECT
     id,
 
     COALESCE(
-        (popularity - min(popularity) OVER ()) /
-            (((max(popularity) OVER ()) - (min(popularity) OVER ()))),
-        0.5
+        (popularity - avg(popularity) OVER ()) /
+            (stddev(popularity) OVER ()),
+        0
     ) AS norm_popularity,
 
     COALESCE(
         (extract(YEAR FROM release_date)::float -
-         min(extract(YEAR FROM release_date)) OVER ()) /
-            (((max(extract(YEAR FROM release_date)) OVER ()) -
-            (min(extract(YEAR FROM release_date)) OVER ()))),
-        0.5
+            avg(extract(YEAR FROM release_date)) OVER ()) /
+            (stddev(extract(YEAR FROM release_date)) OVER ()),
+        0
     ) AS norm_release_date,
 
     COALESCE(
-        (budget::float - min(budget) OVER ()) /
-            (((max(budget) OVER ()) - (min(budget) OVER ()))),
-        0.5
+        (budget::float - avg(budget) OVER ()) /
+            (stddev(budget) OVER ()),
+        0
     ) AS norm_budget,
 
     COALESCE(
-        (revenue::float - min(revenue) OVER ()) /
-            (((max(revenue) OVER ()) - (min(revenue) OVER ()))),
-        0.5
+        (revenue::float - avg(revenue) OVER ()) /
+            (stddev(revenue) OVER ()),
+        0
     ) AS norm_revenue,
 
     COALESCE(
-        (runtime::float - min(runtime) OVER ()) /
-            (((max(runtime) OVER ()) - (min(runtime) OVER ()))),
-        0.5
+        (runtime::float - avg(runtime) OVER ()) /
+            (stddev(runtime) OVER ()),
+        0
     ) AS norm_runtime,
 
     COALESCE(
-        (vote_average::float - min(vote_average) OVER ()) /
-            (((max(vote_average) OVER ()) - (min(vote_average) OVER ()))),
-        0.5
+        (vote_average::float - avg(vote_average) OVER ()) /
+            (stddev(vote_average) OVER ()),
+        0
     ) AS norm_vote_average,
 
     COALESCE(
         (vote_count::float - min(vote_count) OVER ()) /
-            (((max(vote_count) OVER ()) - (min(vote_count) OVER ()))),
+            (stddev(vote_count) OVER ()),
         0
     ) AS norm_vote_count,
 
     COALESCE(
         (length(recommendations)::float -
-         min(length(recommendations)) OVER ()) /
-        (((max(length(recommendations)) OVER ()) -
-          (min(length(recommendations)) OVER ()))),
+            avg(length(recommendations)) OVER ()) /
+            (stddev(length(recommendations)) OVER ()),
         0
     ) AS norm_len_recommendations
 FROM lakehouse.movies;
@@ -113,10 +111,10 @@ WITH embeddings AS (
         ]::vector AS v_features
     FROM movies
 )
-UPDATE movies me
+UPDATE movies m
 SET v_features = e.v_features
 FROM embeddings e
-WHERE me.id = e.id;
+WHERE m.id = e.id;
 
 SELECT * FROM movies LIMIT 100;
 
@@ -162,7 +160,36 @@ FROM movie_embeddings_store, (
     FROM movies
 );
 
+-- This takes a few hours, so let's stop the job and drop the embeddings
+-- table, so we can restore from a previously computed dump instead.
+SELECT ai.drop_vectorizer(
+    (
+        SELECT id FROM ai.vectorizer
+        WHERE target_table = 'movie_embeddings_store'
+    ),
+    drop_all => TRUE
+);
+
+-- EXTERNAL: Restore dump using scripts/restore_embeddings.sh
+
+-- Update movies with content embeddings
+-- Note: in a normal scenario, we could query the movie_embeddings view
+UPDATE movies m
+SET v_content = e.embedding
+FROM movie_embeddings_store e
+WHERE m.id = e.id;
+
+-- We can now drop the movie_embeddings_store, to save space
+DROP TABLE IF EXISTS movie_embeddings_store CASCADE;
+
+-- Let's also combine the v_content and v_features vectors
+UPDATE movies m
+SET v_combined = v_features || v_content;
+
+-- Let's check the final result.
+SELECT * FROM movies LIMIT 100;
+
 -- TODO: index final embedding, after combining vectors
 CREATE INDEX IF NOT EXISTS movie_embeddings_v_combined_cos_idx
-ON movie_embeddings
+ON movies
 USING diskann (v_combined vector_cosine_ops);
