@@ -53,6 +53,16 @@ docker buildx create \
 docker compose up --build -d
 ```
 
+Wait until the `minio-mc` and `ollama-models` containers terminate. The former will setup the `s3://lakehouse` bucket to be used with `pg_mooncake`, and the latter will install the `gemma3:1b` an `nomic-embed-text` models to be used with `pgai`.
+
+You can either monitor this using the CLI and waiting until no container is listed:
+
+```bash
+docker container ls -f name=minio-mc -f name=ollama-models
+```
+
+Or simply by looking at Docker Desktop to check if the corresponding containers inside `postgresql-maximalism` have stopped.
+
 ## Connecting
 
 You can then connect to the database using whichever client you prefer. For example, on Debian 12, you can install the `psql` client as follows:
