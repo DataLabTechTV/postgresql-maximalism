@@ -9,6 +9,7 @@ dependencies = [
     "jupyter>=1.1.1",
     "matplotlib>=3.10.1",
     "nbdime>=4.0.2",
+    "networkx>=3.4.2",
     "pandas>=2.2.3",
     "psycopg2-binary>=2.9.10",
     "python-dotenv>=1.1.0",
