@@ -189,6 +189,6 @@ SET v_combined = v_features || v_content;
 -- Let's check the final result.
 SELECT * FROM movies LIMIT 100;
 
--- Index v_combined for cosine similarity search
+-- Index v_combined for cosine similarity search (takes ~30m)
 CREATE INDEX IF NOT EXISTS movie_embeddings_v_combined_cos_idx
 ON movies USING diskann (v_combined vector_cosine_ops);
