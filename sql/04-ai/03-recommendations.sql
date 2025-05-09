@@ -74,6 +74,9 @@ SELECT
     genres,
     vote_average,
     vote_count,
+    -- <==> for cosine distance (used here)
+    -- <-> for L2/Euclidean distance
+    -- <#> for negative inner product
     v_content <=> avg_v_content AS distance
 FROM user_taste, trusted_movies tm
 JOIN movies m
