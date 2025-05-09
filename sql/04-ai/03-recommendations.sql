@@ -43,7 +43,7 @@ WHERE vote_count > 10;
 
 DROP TABLE IF EXISTS user_profile;
 
-CREATE TEMPORARY TABLE user_profile AS
+CREATE TABLE user_profile AS
 SELECT id, title, "year", v_content
 FROM movies
 WHERE title ~~* '%pope%exorcist%'
@@ -62,7 +62,7 @@ SELECT * FROM user_profile;
 
 DROP TABLE IF EXISTS recommendations;
 
-CREATE TEMPORARY TABLE recommendations AS
+CREATE TABLE recommendations AS
 WITH user_taste AS (
     SELECT avg(v_content) AS avg_v_content
     FROM user_profile
@@ -72,6 +72,8 @@ SELECT
     m.title,
     "year",
     genres,
+    tagline,
+    overview,
     vote_average,
     vote_count,
     -- <==> for cosine distance (used here)
