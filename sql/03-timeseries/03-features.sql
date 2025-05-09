@@ -200,7 +200,7 @@ SELECT add_retention_policy('youtube_ts_weekly_stats', INTERVAL '10 years');
 -- https://docs.timescale.com/api/latest/hyperfunctions/
 
 -- Downsample/smoothing of no. comments
--- See visualization notebook for plots
+-- See companion notebook for plots
 
 DROP FUNCTION IF EXISTS youtube_weekly_smoothed_comments;
 

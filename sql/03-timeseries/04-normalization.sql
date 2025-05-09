@@ -165,7 +165,7 @@ FROM norm_weekly_dislikes;
 SELECT * FROM youtube_ts_weekly_features;
 
 -- Normality test (norm_dislikes)
--- See visualization notebook for plots
+-- See companion notebook for plots
 SELECT
     bucket AS week_start,
     test_normality(array_agg(norm_dislikes), sample_size => 1000) AS is_normal
