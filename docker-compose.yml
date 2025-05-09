@@ -24,6 +24,8 @@ services:
   whodb:
     image: clidey/whodb:0.53.0
     container_name: whodb
+    environment:
+      - WHODB_OLLAMA_HOST=ollama
     ports:
       - "8080:8080"
     restart: unless-stopped
