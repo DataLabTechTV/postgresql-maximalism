@@ -49,7 +49,7 @@ DROP SCHEMA IF EXISTS twitch CASCADE;
 CREATE SCHEMA twitch;
 
 CREATE TABLE twitch.nodes (
-    numeric_id integer,
+    numeric_id integer PRIMARY KEY,
     created_at date,
     updated_at date,
     views integer,
@@ -61,6 +61,7 @@ CREATE TABLE twitch.nodes (
 );
 
 CREATE TABLE twitch.edges (
+    id integer GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     numeric_id_1 integer,
     numeric_id_2 integer
 );
@@ -75,7 +76,7 @@ psql <<EOF
 FROM '$dataset_path/large_twitch_features.csv' \
 WITH (FORMAT csv, HEADER true)
 
-\COPY twitch.edges \
+\COPY twitch.edges(numeric_id_1, numeric_id_2) \
 FROM '$dataset_path/large_twitch_edges.csv' \
 WITH (FORMAT csv, HEADER true)
 EOF
