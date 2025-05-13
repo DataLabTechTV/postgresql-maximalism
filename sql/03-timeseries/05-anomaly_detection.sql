@@ -61,7 +61,7 @@ SELECT * FROM youtube_ts_stats;
 
 DROP TABLE IF EXISTS week_selection;
 
-CREATE TABLE week_selection (
+CREATE TEMPORARY TABLE week_selection (
     ytvideoid character(11),
     bucket timestamp with time zone,
     norm_dislikes double precision,
@@ -139,9 +139,9 @@ SELECT count(*) FROM week_selection;
 
 -- STEP 3: STATS FOR SELECTED WEEKS, ABSOLUTE Z-SCORE, SIGNAL ANOMALY
 
-DROP TABLE IF EXISTS youtube_anomalies;
+DROP TABLE IF EXISTS youtube_ts_anomalies;
 
-CREATE TABLE youtube_anomalies AS
+CREATE TABLE youtube_ts_anomalies AS
 WITH week_stats AS (
     SELECT
         ytvideoid,
@@ -176,7 +176,7 @@ SELECT
 FROM z_scores;
 
 SELECT *
-FROM youtube_anomalies
+FROM youtube_ts_anomalies
 ORDER BY ytvideoid;
 
 
@@ -191,7 +191,7 @@ SELECT * FROM (
         'likes' AS stat,
         likes AS value
     FROM youtube_ts_weekly_stats s
-    JOIN youtube_anomalies a
+    JOIN youtube_ts_anomalies a
     USING (ytvideoid)
     WHERE is_anomaly
     ORDER BY likes DESC
@@ -208,7 +208,7 @@ SELECT * FROM (
         'dislikes' AS stat,
         dislikes AS value
     FROM youtube_ts_weekly_stats s
-    JOIN youtube_anomalies a
+    JOIN youtube_ts_anomalies a
     USING (ytvideoid)
     WHERE is_anomaly
     ORDER BY dislikes DESC
@@ -225,7 +225,7 @@ SELECT * FROM (
         'comments' AS stat,
         comments AS value
     FROM youtube_ts_weekly_stats s
-    JOIN youtube_anomalies a
+    JOIN youtube_ts_anomalies a
     USING (ytvideoid)
     WHERE is_anomaly
     ORDER BY comments DESC
@@ -242,7 +242,7 @@ SELECT * FROM (
         'comments' AS stat,
         comments AS value
     FROM youtube_ts_weekly_stats s
-    JOIN youtube_anomalies a
+    JOIN youtube_ts_anomalies a
     USING (ytvideoid)
     WHERE is_anomaly
     ORDER BY comments

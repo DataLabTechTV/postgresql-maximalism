@@ -15,7 +15,7 @@ WITH ranked_results AS (
         genres,
         tagline,
         overview
-    FROM recommendations
+    FROM movie_recommendations
     WHERE vote_count < 100 AND year >= 1970
     ORDER BY distance
     LIMIT 100

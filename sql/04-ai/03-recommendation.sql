@@ -43,8 +43,8 @@ WHERE vote_count > 10;
 
 DROP TABLE IF EXISTS user_profile;
 
-CREATE TABLE user_profile AS
-SELECT id, title, "year", v_content
+CREATE TEMPORARY TABLE user_profile AS
+SELECT 1 AS user_id, id AS movie_id, title, "year", v_content
 FROM movies
 WHERE title ~~* '%pope%exorcist%'
     OR title ~~* '%crocodile dundee%'
@@ -60,15 +60,32 @@ SELECT * FROM user_profile;
 
 -- COMPUTE RECOMMENDATIONS
 
-DROP TABLE IF EXISTS recommendations;
+CREATE TABLE IF NOT EXISTS movie_recommendations (
+    user_id integer,
+    movie_id integer,
+    title text,
+    year integer,
+    genres text,
+    tagline text,
+    overview text,
+    vote_average float,
+    vote_count integer,
+    distance float
+);
 
-CREATE TABLE recommendations AS
+DELETE FROM movie_recommendations
+WHERE user_id = (SELECT user_id FROM user_profile);
+
+INSERT INTO movie_recommendations
 WITH user_taste AS (
-    SELECT avg(v_content) AS avg_v_content
+    SELECT
+        max(user_id) AS user_id,
+        avg(v_content) AS avg_v_content
     FROM user_profile
 )
 SELECT
-    m.id,
+    ut.user_id,
+    m.id AS movie_id,
     m.title,
     "year",
     genres,
@@ -80,16 +97,17 @@ SELECT
     -- <-> for L2/Euclidean distance
     -- <#> for negative inner product
     v_content <=> avg_v_content AS distance
-FROM user_taste, trusted_movies tm
+FROM user_taste ut, trusted_movies tm
 JOIN movies m
 USING (id)
-WHERE NOT id IN (SELECT id FROM user_profile)
+WHERE NOT m.id IN (SELECT movie_id FROM user_profile)
 ORDER BY distance
 LIMIT 10000;
 
+
 -- View top recommendations
 SELECT *
-FROM recommendations
+FROM movie_recommendations
 ORDER BY distance
 LIMIT 100;
 
@@ -97,7 +115,7 @@ LIMIT 100;
 -- 1. Lesser known (low vote counts)
 -- 2. Not too old (>1970s)
 SELECT *
-FROM recommendations
+FROM movie_recommendations
 WHERE vote_count < 100 AND year >= 1970
 ORDER BY distance
 LIMIT 100;
