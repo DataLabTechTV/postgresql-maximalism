@@ -107,6 +107,21 @@ RUN git clone --branch 0.7.1 --depth 1 https://github.com/timescale/pgvectorscal
 
 
 #
+# pgai
+#
+
+FROM base AS build-pgai
+
+RUN apt-get update && apt-get install -y python3-pip postgresql-plpython3-16
+
+RUN git clone --branch pgai-v0.9.2 --depth 1 https://github.com/timescale/pgai \
+    && cd pgai \
+    && projects/extension/build.py build-install
+
+RUN pip3 install --prefix=/extra-python-packages scipy powerlaw scikit-learn
+
+
+#
 # ParadeDB (pg_search)
 #
 
@@ -153,6 +168,18 @@ RUN git clone --branch v3.7.3 --depth 1 https://github.com/pgRouting/pgrouting \
 
 
 #
+# pg_partman
+#
+
+FROM base AS build-pg_partman
+
+RUN git clone --branch v5.2.4 --depth 1 https://github.com/pgpartman/pg_partman \
+    && cd pg_partman \
+    && make \
+    && make install
+
+
+#
 # pgmq
 #
 
@@ -162,21 +189,6 @@ RUN git clone --branch v1.5.1 --depth 1 https://github.com/tembo-io/pgmq \
     && cd pgmq/pgmq-extension \
     && make \
     && make install
-
-
-#
-# pgai
-#
-
-FROM base AS build-pgai
-
-RUN apt-get update && apt-get install -y python3-pip postgresql-plpython3-16
-
-RUN git clone --branch pgai-v0.9.2 --depth 1 https://github.com/timescale/pgai \
-    && cd pgai \
-    && projects/extension/build.py build-install
-
-RUN pip3 install --prefix=/extra-python-packages scipy powerlaw scikit-learn
 
 
 #
@@ -214,6 +226,13 @@ COPY --from=build-pgvectorscale /usr/lib/postgresql/16/lib/* \
 COPY --from=build-pgvectorscale /usr/share/postgresql/16/extension/* \
     /usr/share/postgresql/16/extension/
 
+COPY --from=build-pgai /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pgai /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
+COPY --from=build-pgai /usr/local/lib/pgai /usr/local/lib/pgai
+COPY --from=build-pgai /extra-python-packages /usr
+
 COPY --from=build-paradedb /usr/lib/postgresql/16/lib/* \
     /usr/lib/postgresql/16/lib/
 COPY --from=build-paradedb /usr/share/postgresql/16/extension/* \
@@ -229,17 +248,15 @@ COPY --from=build-pgrouting /usr/lib/postgresql/16/lib/* \
 COPY --from=build-pgrouting /usr/share/postgresql/16/extension/* \
     /usr/share/postgresql/16/extension/
 
+COPY --from=build-pg_partman /usr/lib/postgresql/16/lib/* \
+    /usr/lib/postgresql/16/lib/
+COPY --from=build-pg_partman /usr/share/postgresql/16/extension/* \
+    /usr/share/postgresql/16/extension/
+
 COPY --from=build-pgmq /usr/lib/postgresql/16/lib/* \
     /usr/lib/postgresql/16/lib/
 COPY --from=build-pgmq /usr/share/postgresql/16/extension/* \
     /usr/share/postgresql/16/extension/
-
-COPY --from=build-pgai /usr/lib/postgresql/16/lib/* \
-    /usr/lib/postgresql/16/lib/
-COPY --from=build-pgai /usr/share/postgresql/16/extension/* \
-    /usr/share/postgresql/16/extension/
-COPY --from=build-pgai /usr/local/lib/pgai /usr/local/lib/pgai
-COPY --from=build-pgai /extra-python-packages /usr
 
 RUN apt-get update && apt-get install -y libproj25 libgeos-c1v5 libxml2 gettext \
     libjson-c5 libgdal32 libsfcgal1 libprotobuf-c1 postgresql-plpython3-16 python3
