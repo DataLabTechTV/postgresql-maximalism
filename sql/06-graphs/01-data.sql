@@ -1,5 +1,5 @@
 /*
- * Category: Vectors and AI
+ * Category: Graphs
  * Extension: pgrouting
  * Task: Load one of the supported graphs.
  */

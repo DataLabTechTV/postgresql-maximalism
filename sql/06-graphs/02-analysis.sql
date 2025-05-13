@@ -1,5 +1,5 @@
 /*
- * Category: Vectors and AI
+ * Category: Graphs
  * Extension: pgrouting
  * Task: Network analysis with pgrouting and vanilla postgres.
  */
