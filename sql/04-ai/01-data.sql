@@ -56,3 +56,16 @@ AS (
 );
 
 SELECT * FROM lakehouse.movies LIMIT 100;
+
+WITH temporal_coverage AS (
+    SELECT
+        min(release_date) AS since,
+        max(release_date) AS until
+    FROM lakehouse.movies
+    WHERE release_date <= now()
+)
+SELECT title, release_date
+FROM lakehouse.movies, temporal_coverage
+WHERE release_date = since
+    OR release_date = until
+ORDER BY release_date;
