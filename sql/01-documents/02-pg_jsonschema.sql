@@ -199,7 +199,7 @@ VALUES
 
 -- Update with invalid action param
 UPDATE request
-SET params['action'] = '"delete_account"',
+SET params['action'] = '"delete_account"'
 WHERE id = 1;
 
 -- Update with invalid response status
