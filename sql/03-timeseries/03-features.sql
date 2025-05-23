@@ -276,7 +276,7 @@ SELECT
         histogram(
             likes,
             1000,       -- (-Inf; 1000)
-            1000000,    -- [3,000,000, +Inf)
+            1000000,    -- [1,000,000, +Inf)
             50          -- approximate no. bins
         )
     ) AS bin_count
