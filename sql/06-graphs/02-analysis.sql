@@ -65,7 +65,7 @@ BEGIN;
 END;
 
 
--- SHORTEST PATH BETWEEN TWO HIGHEST-DEGREE NODES
+-- SHORTEST PATH BETWEEN TWO NODES
 
 WITH shortest_path AS (
     SELECT edge
@@ -244,6 +244,6 @@ SELECT
     aspl,
     aspl <= 6 AS is_short_aspl,
     cc,
-    cc > 0.0006346085927083137 AS is_high_cc,
-    (aspl <= 6 AND cc > 0.0006346085927083137) AS is_small_world
+    cc > 0.0006600020926836518 AS is_high_cc,
+    (aspl <= 6 AND cc > 0.0006600020926836518) AS is_small_world
 FROM small_world_properties;
