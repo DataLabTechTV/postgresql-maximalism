@@ -26,16 +26,26 @@ FROM pgr_extractVertices(
 SELECT * FROM graph.node_info LIMIT 100;
 
 
--- Node degree
+-- Node degree + example of named string quotes
+
+DROP FUNCTION IF EXISTS compute_degree_table;
+
+CREATE OR REPLACE FUNCTION compute_degree_table()
+RETURNS TABLE (node_id bigint, degree bigint) AS $$
+BEGIN
+    RETURN QUERY
+    SELECT node AS node_id, d.degree
+    FROM pgr_degree(
+        $q$SELECT edge_id AS id FROM graph.edges$q$,
+        $q$SELECT id, in_edges, out_edges FROM graph.node_info$q$
+    ) d;
+END;
+$$ LANGUAGE 'plpgsql';
 
 DROP TABLE IF EXISTS graph.node_degree;
 
 CREATE TABLE graph.node_degree AS
-SELECT node AS node_id, degree
-FROM pgr_degree(
-    $$SELECT edge_id AS id FROM graph.edges$$,
-    $$SELECT id, in_edges, out_edges FROM graph.node_info$$
-);
+SELECT * FROM compute_degree_table();
 
 SELECT node_id, degree
 FROM graph.node_degree
