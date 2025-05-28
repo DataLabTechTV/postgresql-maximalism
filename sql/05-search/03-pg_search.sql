@@ -73,13 +73,13 @@ WHERE
     AND publish_date @@@ '[2000-01-01T00:00:00Z TO 2024-12-31T23:59:59Z]'
 ORDER BY paradedb.score(id) DESC;
 
--- (1/2) Without field boosting
+-- (1/2) Without term boosting
 SELECT id, content, rating, publish_date
 FROM doc
 WHERE content @@@ 'postgresql rating:5'
 ORDER BY paradedb.score(id) DESC;
 
--- (2/2) With field boosting
+-- (2/2) With term boosting
 SELECT id, content, rating, publish_date
 FROM doc
 WHERE content @@@ 'postgresql^10 rating:5'
