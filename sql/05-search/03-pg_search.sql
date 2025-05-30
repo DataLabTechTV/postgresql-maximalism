@@ -73,6 +73,18 @@ WHERE
     AND publish_date @@@ '[2000-01-01T00:00:00Z TO 2024-12-31T23:59:59Z]'
 ORDER BY paradedb.score(id) DESC;
 
+-- Equivalent to previous query
+SELECT id, content, rating, publish_date
+FROM doc
+WHERE
+    content @@@ $$
+        (postgresql performance)
+        AND rating:IN [3 4 5]
+        AND publish_date:[2000-01-01T00:00:00Z TO 2024-12-31T23:59:59Z]
+    $$
+ORDER BY paradedb.score(id) DESC;
+
+
 -- (1/2) Without term boosting
 SELECT id, content, rating, publish_date
 FROM doc
