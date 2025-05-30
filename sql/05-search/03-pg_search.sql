@@ -84,7 +84,6 @@ WHERE
     $$
 ORDER BY paradedb.score(id) DESC;
 
-
 -- (1/2) Without term boosting
 SELECT id, content, rating, publish_date
 FROM doc
